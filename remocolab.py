@@ -264,8 +264,17 @@ subprocess.run(
 #Disable screensaver because no one would want it.
 (pathlib.Path.home() / ".xscreensaver").write_text("mode: off\\n")
 """)
+  vncrun_py.chmod(0o644)
+  shutil.chown(vncrun_py, "colab", "colab")
+
+  vnclogin_sh = pathlib.Path("vnclogin.sh")
+  vnclogin_sh.write_text("""\
+#!/bin/bash
+su --login -c "python3 /tmp/vncrun.py" colab
+""")
+  vnclogin_sh.chmod(0o755)
   r = subprocess.run(
-                    ["su", "-c", "python3 " + str(vncrun_py), "colab"],
+                    ["./vnclogin.sh"],
                     check = True,
                     stdout = subprocess.PIPE,
                     universal_newlines = True)
