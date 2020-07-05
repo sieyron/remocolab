@@ -43,6 +43,9 @@ def _check_gpu_available():
   return IPython.utils.io.ask_yes_no("Do you want to continue? [y/n]")
 
 def _setupSSHDImpl(ngrok_token, ngrok_region):
+  #enable 32 bit architecture
+  subprocess.run(["/usr/bin/dpkg", "--add-architecture", "i386"])
+
   #apt-get update
   #apt-get upgrade
   cache = apt.Cache()
@@ -221,6 +224,9 @@ def _setupVNC():
   apt.debfile.DebPackage("libjpeg-turbo.deb", cache).install()
   apt.debfile.DebPackage("virtualgl.deb", cache).install()
   apt.debfile.DebPackage("turbovnc.deb", cache).install()
+
+  # Fix broken dependencies
+  subprocess.run(["/usr/bin/apt", "--fix-broken", "--yes", "install"])
 
   _installPkgs(cache, "xfce4", "xfce4-terminal")
   cache.commit()
