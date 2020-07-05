@@ -209,20 +209,26 @@ def _setup_nvidia_gl():
   subprocess.Popen(["Xorg", "-seat", "seat-1", "-allowMouseOpenFail", "-novtswitch", "-nolisten", "tcp"])
 
 def _setupVNC():
-  libjpeg_ver = "2.0.4"
-  virtualGL_ver = "2.6.3"
+  libjpeg_ver = "2.0.5"
+  virtualGL_ver = "2.6.4"
   turboVNC_ver = "2.2.5"
 
-  libjpeg_url = "https://astuteinternet.dl.sourceforge.net/project/libjpeg-turbo/{0}/libjpeg-turbo-official_{0}_amd64.deb".format(libjpeg_ver)
-  virtualGL_url = "https://astuteinternet.dl.sourceforge.net/project/virtualgl/{0}/virtualgl_{0}_amd64.deb".format(virtualGL_ver)
-  turboVNC_url = "https://astuteinternet.dl.sourceforge.net/project/turbovnc/{0}/turbovnc_{0}_amd64.deb".format(turboVNC_ver)
+  libjpeg_url = "https://cfhcable.dl.sourceforge.net/project/libjpeg-turbo/{0}/libjpeg-turbo-official_{0}_amd64.deb".format(libjpeg_ver)
+  libjpeg32_url = "https://cfhcable.dl.sourceforge.net/project/libjpeg-turbo/{0}/libjpeg-turbo-official32_{0}_amd64.deb".format(libjpeg_ver)
+  virtualGL_url = "https://cfhcable.dl.sourceforge.net/project/virtualgl/{0}/virtualgl_{0}_amd64.deb".format(virtualGL_ver)
+  virtualGL32_url = "https://cfhcable.dl.sourceforge.net/project/virtualgl/{0}/virtualgl32_{0}_amd64.deb".format(virtualGL_ver)
+  turboVNC_url = "https://cfhcable.dl.sourceforge.net/project/turbovnc/{0}/turbovnc_{0}_amd64.deb".format(turboVNC_ver)
 
   _download(libjpeg_url, "libjpeg-turbo.deb")
+  _download(libjpeg32_url, "libjpeg-turbo32.deb")
   _download(virtualGL_url, "virtualgl.deb")
+  _download(virtualGL32_url, "virtualgl32.deb")
   _download(turboVNC_url, "turbovnc.deb")
   cache = apt.Cache()
   apt.debfile.DebPackage("libjpeg-turbo.deb", cache).install()
+  apt.debfile.DebPackage("libjpeg-turbo32.deb", cache).install()
   apt.debfile.DebPackage("virtualgl.deb", cache).install()
+  apt.debfile.DebPackage("virtualgl32.deb", cache).install()
   apt.debfile.DebPackage("turbovnc.deb", cache).install()
 
   # Fix broken dependencies
@@ -230,6 +236,23 @@ def _setupVNC():
 
   _installPkgs(cache, "xfce4", "xfce4-terminal")
   cache.commit()
+
+  # Set setuid/setgid flag and symlink VirtualGL libraries
+  ldpreload_sh = pathlib.Path("ldpreload.sh")
+  ldpreload_sh.write_text("""\
+#!/bin/bash
+
+chmod u+s /usr/lib/lib{dl,vgl}faker.so
+chmod u+s /usr/lib32/lib{dl,vgl}faker.so
+
+ln -sf /usr/lib/libdlfaker.so /usr/lib/x86_64-linux-gnu/libdlfaker.so
+ln -sf /usr/lib/libgefaker.so /usr/lib/x86_64-linux-gnu/libgefaker.so
+ln -sf /usr/lib/libvglfaker-nodl.so /usr/lib/x86_64-linux-gnu/libvglfaker-nodl.so
+ln -sf /usr/lib/libvglfaker-opencl.so /usr/lib/x86_64-linux-gnu/libvglfaker-opencl.so
+ln -sf /usr/lib/libvglfaker.so /usr/lib/x86_64-linux-gnu/libvglfaker.so
+""")
+  ldpreload_sh.chmod(0o755)
+  subprocess.run(["./ldpreload.sh"])
 
   vnc_sec_conf_p = pathlib.Path("/etc/turbovncserver-security.conf")
   vnc_sec_conf_p.write_text("""\
