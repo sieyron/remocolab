@@ -42,6 +42,22 @@ def _check_gpu_available():
 
   return IPython.utils.io.ask_yes_no("Do you want to continue? [y/n]")
 
+def _bashprofile():
+  dotprofile_py = pathlib.Path("dotprofile.py")
+  dotprofile_py.write_text(r"""import pathlib
+
+bash_profile = pathlib.Path.home().joinpath(".profile")
+rundotprofile_py = pathlib.Path.home().joinpath(".dotprofile_py_works")
+
+if not rundotprofile_py.exists():
+# fix SDL2 Couldn't find matching GLX visual
+  with open(bash_profile, "a") as f:
+    f.write("\n# fix GLX Visuals\nexport SDL_VIDEO_X11_VISUALID=`DISPLAY=\":0.0\" /opt/VirtualGL/bin/glxinfo | grep -A4 \"GLX Visuals\" | sed '1,4d' | cut -d \" \" -f 1`\n")
+
+open(rundotprofile_py, "w").close()
+""")
+  subprocess.run(["su", "-c", "python3 " + str(dotprofile_py), "colab"])
+
 def _setupSSHDImpl(ngrok_token, ngrok_region):
   #enable 32 bit architecture
   subprocess.run(["/usr/bin/dpkg", "--add-architecture", "i386"])
@@ -150,6 +166,9 @@ def _setupSSHDMain(ngrok_region, check_gpu_available):
 def setupSSHD(ngrok_region = None, check_gpu_available = False):
   s, msg = _setupSSHDMain(ngrok_region, check_gpu_available)
   print(msg)
+
+  #Add scripts to user profile
+  _bashprofile()
 
 def _setup_nvidia_gl():
   # Install TESLA DRIVER FOR LINUX X64.
