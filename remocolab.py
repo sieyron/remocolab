@@ -58,9 +58,23 @@ open(rundotprofile_py, "w").close()
 """)
   subprocess.run(["su", "-c", "python3 " + str(dotprofile_py), "colab"])
 
+def _GoogleLinuxRepo():
+  #Google Linux Software Repositories
+  subprocess.run(["wget -q 'https://dl.google.com/linux/linux_signing_key.pub' -O- | apt-key add -"], shell = True)
+  google_chrome_repo = pathlib.Path("/etc/apt/sources.list.d/google-chrome.list")
+  google_chrome_repo.write_text("""\
+### THIS FILE IS AUTOMATICALLY CONFIGURED ###
+# You may comment out this entry, but any other modifications may be lost.
+deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main
+""")
+  google_chrome_repo.chmod(0o644)
+
 def _setupSSHDImpl(ngrok_token, ngrok_region):
   #enable 32 bit architecture
   subprocess.run(["/usr/bin/dpkg", "--add-architecture", "i386"])
+
+  #Add Google APT source list
+  _GoogleLinuxRepo()
 
   #apt-get update
   #apt-get upgrade
@@ -258,7 +272,8 @@ def _setupVNC():
                "xfce4-goodies",
                "gtk2-engines-pixbuf",
                "gtk2-engines-pixbuf:i386",
-               "pm-utils")
+               "pm-utils",
+               "google-chrome-stable")
   cache.commit()
 
   # Set setuid/setgid flag and symlink VirtualGL libraries
