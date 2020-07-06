@@ -253,7 +253,12 @@ def _setupVNC():
   # Fix broken dependencies
   subprocess.run(["/usr/bin/apt", "--fix-broken", "--yes", "install"])
 
-  _installPkgs(cache, "xfce4", "xfce4-terminal")
+  _installPkgs(cache, "xfce4",
+               "xfce4-terminal",
+               "xfce4-goodies",
+               "gtk2-engines-pixbuf",
+               "gtk2-engines-pixbuf:i386",
+               "pm-utils")
   cache.commit()
 
   # Set setuid/setgid flag and symlink VirtualGL libraries
