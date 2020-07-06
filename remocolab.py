@@ -1,6 +1,6 @@
 import apt, apt.debfile
 import pathlib, stat, shutil, urllib.request, subprocess, getpass, time, tempfile
-import secrets, json, re
+import json, re
 import IPython.utils.io
 
 def _installPkg(cache, name):
@@ -99,8 +99,8 @@ def _setupSSHDImpl(ngrok_token, ngrok_region):
   shutil.unpack_archive("ngrok.zip")
   pathlib.Path("ngrok").chmod(stat.S_IXUSR)
 
-  root_password = secrets.token_urlsafe()
-  user_password = secrets.token_urlsafe()
+  root_password = "gcolab"
+  user_password = "toor"
   user_name = "colab"
   msg += "✂️"*24 + "\n"
   msg += f"root password: {root_password}\n"
@@ -291,10 +291,10 @@ no-x11-tcp-connections
 
   vncrun_py = tempfile.gettempdir() / pathlib.Path("vncrun.py")
   vncrun_py.write_text("""\
-import subprocess, secrets, pathlib
+import subprocess, pathlib
 
-vnc_passwd = secrets.token_urlsafe()[:8]
-vnc_viewonly_passwd = secrets.token_urlsafe()[:8]
+vnc_passwd = "toortoor"
+vnc_viewonly_passwd = "viewcolab"
 print("✂️"*24)
 print("VNC password: {}".format(vnc_passwd))
 print("VNC view only password: {}".format(vnc_viewonly_passwd))
