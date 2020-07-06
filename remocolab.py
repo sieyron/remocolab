@@ -124,6 +124,11 @@ def _setupSSHDImpl(ngrok_token, ngrok_region):
   subprocess.run(["adduser", user_name, "sudo"], check = True)
   subprocess.run(["chpasswd"], input = f"root:{root_password}", universal_newlines = True)
   subprocess.run(["chpasswd"], input = f"{user_name}:{user_password}", universal_newlines = True)
+
+  #Add scripts to user profile
+  _bashprofile()
+
+  #Restart ssh service
   subprocess.run(["service", "ssh", "restart"])
 
   if not pathlib.Path('/root/.ngrok2/ngrok.yml').exists():
@@ -180,9 +185,6 @@ def _setupSSHDMain(ngrok_region, check_gpu_available):
 def setupSSHD(ngrok_region = None, check_gpu_available = False):
   s, msg = _setupSSHDMain(ngrok_region, check_gpu_available)
   print(msg)
-
-  #Add scripts to user profile
-  _bashprofile()
 
 def _setup_nvidia_gl():
   # Install TESLA DRIVER FOR LINUX X64.
