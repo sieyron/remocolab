@@ -311,7 +311,9 @@ with vnc_user_passwd.open('wb') as f:
     universal_newlines=True)
 vnc_user_passwd.chmod(0o600)
 subprocess.run(
-  ["/opt/TurboVNC/bin/vncserver"]
+  ["/opt/TurboVNC/bin/vncserver",
+  "-name", "Colab",
+  "-vgl"]
 )
 
 #Disable screensaver because no one would want it.
