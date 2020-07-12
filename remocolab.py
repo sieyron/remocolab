@@ -3,17 +3,23 @@ import pathlib, stat, shutil, urllib.request, subprocess, getpass, time, tempfil
 import json, re
 import IPython.utils.io
 
-def _installPkg(cache, name):
+def _installPkg(cache, name, pkgtype):
   pkg = cache[name]
-  if pkg.is_installed:
-    print(f"{name} is already installed")
-  else:
-    print(f"Install {name}")
+  if pkgtype == "default":
+    if pkg.is_installed:
+      print(f"{name} is already installed. This package will be updated if available.")
+      pkg.mark_install()
+    else:
+      print(f"Install {name}")
+      pkg.mark_install()
+  elif pkgtype == "fonts":
     pkg.mark_install()
 
-def _installPkgs(cache, *args):
-  for i in args:
-    _installPkg(cache, i)
+def _installPkgs(cache, args0, *args1):
+  for i in args0:
+    _installPkg(cache, i, "fonts")
+  for i in args1:
+    _installPkg(cache, i, "default")
 
 def _download(url, path):
   try:
@@ -86,7 +92,7 @@ def _setupSSHDImpl(ngrok_token, ngrok_region):
 
   subprocess.run(["unminimize"], input = "y\n", check = True, universal_newlines = True)
 
-  _installPkg(cache, "openssh-server")
+  _installPkg(cache, "openssh-server", "default")
   cache.commit()
 
   #Reset host keys
@@ -269,7 +275,17 @@ def _setupVNC():
   # Fix broken dependencies
   subprocess.run(["/usr/bin/apt", "--fix-broken", "--yes", "install"])
 
-  _installPkgs(cache, "xfce4",
+  # Font packages list
+  font_pkgs = ["fonts-beng-extra", "fonts-dejavu-core", "fonts-deva-extra", "fonts-droid-fallback", "fonts-gubbi", "fonts-gujr-extra", "fonts-guru-extra",
+               "fonts-lohit-beng-assamese", "fonts-lohit-beng-bengali", "fonts-lohit-deva", "fonts-lohit-gujr", "fonts-lohit-guru", "fonts-lohit-knda",
+               "fonts-lohit-mlym", "fonts-lohit-orya", "fonts-lohit-taml", "fonts-lohit-taml-classical", "fonts-lohit-telu", "fonts-noto-cjk", "fonts-noto-mono",
+               "fonts-opensymbol", "fonts-orya-extra", "fonts-pagul", "fonts-smc-anjalioldlipi", "fonts-smc-chilanka", "fonts-smc-dyuthi", "fonts-smc-karumbi",
+               "fonts-smc-keraleeyam", "fonts-smc-manjari", "fonts-smc-meera", "fonts-smc-rachana", "fonts-smc-raghumalayalamsans", "fonts-smc-suruma",
+               "fonts-smc-uroob", "fonts-telu-extra", "fonts-tlwg-garuda", "fonts-tlwg-kinnari", "fonts-tlwg-laksaman", "fonts-tlwg-loma", "fonts-tlwg-mono",
+               "fonts-tlwg-norasi", "fonts-tlwg-typist", "fonts-tlwg-typo", "fonts-tlwg-umpush", "fonts-tlwg-waree", "fonts-urw-base35"]
+
+  _installPkgs(cache, font_pkgs,
+               "xfce4",
                "xfce4-terminal",
                "xfce4-goodies",
                "gtk2-engines-pixbuf",
