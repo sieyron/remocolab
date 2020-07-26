@@ -2,24 +2,78 @@ import apt, apt.debfile
 import pathlib, stat, shutil, urllib.request, subprocess, getpass, time, tempfile
 import json, re
 import IPython.utils.io
+import ipywidgets
 
-def _installPkg(cache, name, pkgtype):
-  pkg = cache[name]
-  if pkgtype == "default":
-    if pkg.is_installed:
-      print(f"{name} is already installed. This package will be updated if available.")
-      pkg.mark_install()
-    else:
-      print(f"Install {name}")
-      pkg.mark_install()
-  elif pkgtype == "fonts":
-    pkg.mark_install()
+# https://salsa.debian.org/apt-team/python-apt
+# https://apt-team.pages.debian.net/python-apt/library/index.html
+class _NoteProgress(apt.progress.base.InstallProgress, apt.progress.base.AcquireProgress, apt.progress.base.OpProgress):
+  def __init__(self):
+    apt.progress.base.InstallProgress.__init__(self)
+    self._label = ipywidgets.Label()
+    display(self._label)
+    self._float_progress = ipywidgets.FloatProgress(min = 0.0, max = 1.0, layout = {'border':'1px solid #118800'})
+    display(self._float_progress)
 
-def _installPkgs(cache, args0, *args1):
-  for i in args0:
-    _installPkg(cache, i, "fonts")
-  for i in args1:
-    _installPkg(cache, i, "default")
+  def close(self):
+    self._float_progress.close()
+    self._label.close()
+
+  def fetch(self, item):
+    self._label.value = "fetch: " + item.shortdesc
+
+  def pulse(self, owner):
+    self._float_progress.value = self.current_items / self.total_items
+    return True
+
+  def status_change(self, pkg, percent, status):
+    self._label.value = "%s: %s" % (pkg, status)
+    self._float_progress.value = percent / 100.0
+
+  def update(self, percent=None):
+    self._float_progress.value = self.percent / 100.0
+    self._label.value = self.op + ": " + self.subop
+
+  def done(self, item=None):
+    pass
+
+class _MyApt:
+  def __init__(self):
+    self._progress = _NoteProgress()
+    self._cache = apt.Cache(self._progress)
+
+  def close(self):
+    self._cache.close()
+    self._cache = None
+    self._progress.close()
+    self._progress = None
+
+  def update_upgrade(self):
+    self._cache.update()
+    self._cache.open(None)
+    self._cache.upgrade()
+
+  def commit(self):
+    self._cache.commit(self._progress, self._progress)
+    self._cache.clear()
+
+  def installPkg(self, *args):
+    for name in args:
+      pkg = self._cache[name]
+      if pkg.is_installed:
+        print(f"{name} is already installed. This package will be updated if available.")
+        pkg.mark_install()
+      else:
+        print(f"Install {name}")
+        pkg.mark_install()
+
+  def installBundlePkg(self, bndlname, args):
+    print(f"Install {bndlname} bundle")
+    for name in args:
+      pkg = self._cache[name]
+      pkg.mark_install()
+
+  def installDebPackage(self, name):
+    apt.debfile.DebPackage(name, self._cache).install()
 
 def _download(url, path):
   try:
@@ -84,16 +138,15 @@ def _setupSSHDImpl(ngrok_token, ngrok_region):
 
   #apt-get update
   #apt-get upgrade
-  cache = apt.Cache()
-  cache.update()
-  cache.open(None)
-  cache.upgrade()
-  cache.commit()
+  my_apt = _MyApt()
+  my_apt.update_upgrade()
+  my_apt.commit()
 
   subprocess.run(["unminimize"], input = "y\n", check = True, universal_newlines = True)
 
-  _installPkg(cache, "openssh-server", "default")
-  cache.commit()
+  my_apt.installPkg("openssh-server")
+  my_apt.commit()
+  my_apt.close()
 
   #Reset host keys
   for i in pathlib.Path("/etc/ssh").glob("ssh_host_*_key"):
@@ -265,12 +318,12 @@ def _setupVNC():
   _download(virtualGL_url, "virtualgl.deb")
   _download(virtualGL32_url, "virtualgl32.deb")
   _download(turboVNC_url, "turbovnc.deb")
-  cache = apt.Cache()
-  apt.debfile.DebPackage("libjpeg-turbo.deb", cache).install()
-  apt.debfile.DebPackage("libjpeg-turbo32.deb", cache).install()
-  apt.debfile.DebPackage("virtualgl.deb", cache).install()
-  apt.debfile.DebPackage("virtualgl32.deb", cache).install()
-  apt.debfile.DebPackage("turbovnc.deb", cache).install()
+  my_apt = _MyApt()
+  my_apt.installDebPackage("libjpeg-turbo.deb")
+  my_apt.installDebPackage("libjpeg-turbo32.deb")
+  my_apt.installDebPackage("virtualgl.deb")
+  my_apt.installDebPackage("virtualgl32.deb")
+  my_apt.installDebPackage("turbovnc.deb")
 
   # Fix broken dependencies
   subprocess.run(["/usr/bin/apt", "--fix-broken", "--yes", "install"])
@@ -284,15 +337,19 @@ def _setupVNC():
                "fonts-smc-uroob", "fonts-telu-extra", "fonts-tlwg-garuda", "fonts-tlwg-kinnari", "fonts-tlwg-laksaman", "fonts-tlwg-loma", "fonts-tlwg-mono",
                "fonts-tlwg-norasi", "fonts-tlwg-typist", "fonts-tlwg-typo", "fonts-tlwg-umpush", "fonts-tlwg-waree", "fonts-urw-base35"]
 
-  _installPkgs(cache, font_pkgs,
-               "xfce4",
-               "xfce4-terminal",
-               "xfce4-goodies",
-               "gtk2-engines-pixbuf",
-               "gtk2-engines-pixbuf:i386",
-               "pm-utils",
-               "google-chrome-stable")
-  cache.commit()
+  # Install font packages
+  my_apt.installBundlePkg("System Font", font_pkgs)
+  my_apt.commit()
+
+  my_apt.installPkg("xfce4",
+                    "xfce4-terminal",
+                    "xfce4-goodies",
+                    "gtk2-engines-pixbuf",
+                    "gtk2-engines-pixbuf:i386",
+                    "pm-utils",
+                    "google-chrome-stable")
+  my_apt.commit()
+  my_apt.close()
 
   # Set setuid/setgid flag and symlink VirtualGL libraries
   ldpreload_sh = pathlib.Path("ldpreload.sh")
