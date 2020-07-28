@@ -110,6 +110,27 @@ def _check_gpu_available():
 
   return IPython.utils.io.ask_yes_no("Do you want to continue? [y/n]")
 
+def _installDoH():
+  resolvconf_sh = tempfile.gettempdir() + "/resolvconf.sh"
+  doh_tgz = tempfile.gettempdir() + "/dns-over-https.tar.gz"
+
+  _download("https://github.com/sieyron/dns-over-https/releases/download/v2.2.1/dns-over-https_2.2.1_amd64.tar.gz", doh_tgz)
+  shutil.unpack_archive(doh_tgz, "/opt/", "gztar")
+
+  #Run doh-client in background
+  subprocess.Popen(["/opt/dns-over-https/bin/doh-client", "-conf", "/opt/dns-over-https/conf/doh-client.conf"])
+
+  with open(resolvconf_sh, "w") as f:
+    f.write("#!/bin/bash\n\necho \"$(sed '2,$c nameserver 127.0.0.86\\noptions ndots:0' /etc/resolv.conf)\" > /etc/resolv.conf 2>&1\n")
+  pathlib.Path(resolvconf_sh).chmod(0o755)
+
+  #Change resolv.conf nameserver
+  subprocess.run([resolvconf_sh])
+
+  #delete related files
+  pathlib.Path(doh_tgz).unlink()
+  pathlib.Path(resolvconf_sh).unlink()
+
 def _bashprofile():
   dotprofile_py = pathlib.Path("dotprofile.py")
   dotprofile_py.write_text(r"""import pathlib
@@ -143,6 +164,10 @@ def _setupSSHDImpl(ngrok_token, ngrok_region):
 
   #Add Google APT source list
   _GoogleLinuxRepo()
+
+  #DNS over HTTPS
+  if not pathlib.Path('/opt/dns-over-https').exists():
+    _installDoH()
 
   #apt-get update
   #apt-get upgrade
