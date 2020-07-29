@@ -131,20 +131,26 @@ def _installDoH():
   pathlib.Path(doh_tgz).unlink()
   pathlib.Path(resolvconf_sh).unlink()
 
-def _bashprofile():
+def _bashprofile(is_VNC):
   dotprofile_py = pathlib.Path("dotprofile.py")
-  dotprofile_py.write_text(r"""import pathlib
+  dotprofile_py.write_text("""\
+import pathlib
 
 bash_profile = pathlib.Path.home().joinpath(".profile")
 rundotprofile_py = pathlib.Path.home().joinpath(".dotprofile_py_works")
 
 if not rundotprofile_py.exists():
-# fix SDL2 Couldn't find matching GLX visual
-  with open(bash_profile, "a") as f:
-    f.write("\n# fix GLX Visuals\nexport SDL_VIDEO_X11_VISUALID=`DISPLAY=\":0.0\" /opt/VirtualGL/bin/glxinfo | grep -A4 \"GLX Visuals\" | sed '1,4d' | cut -d \" \" -f 1`\n")
-
-open(rundotprofile_py, "w").close()
 """)
+
+  if is_VNC:
+    with open(dotprofile_py, "a") as f:
+      f.write("  # fix SDL2 Couldn't find matching GLX visual\n")
+      f.write("  with open(bash_profile, \"a\") as f:\n")
+      f.write('    f.write(\"\\n# fix GLX Visuals\\nexport SDL_VIDEO_X11_VISUALID=`DISPLAY=\\":0.0\\" /opt/VirtualGL/bin/glxinfo | grep -A4 \\"GLX Visuals\\" | sed \'1,4d\' | cut -d \\" \\" -f 1`\\n\")\n')
+
+  with open(dotprofile_py, "a") as f:
+    f.write("\nopen(rundotprofile_py, \"w\").close()\n")
+
   subprocess.run(["su", "-c", "python3 " + str(dotprofile_py), "colab"])
 
 def _GoogleLinuxRepo():
@@ -222,7 +228,7 @@ def _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC):
   subprocess.run(["chpasswd"], input = f"{user_name}:{user_password}", universal_newlines = True)
 
   #Add scripts to user profile
-  _bashprofile()
+  _bashprofile(is_VNC)
 
   #Restart ssh service
   subprocess.run(["service", "ssh", "restart"])
