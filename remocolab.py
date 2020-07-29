@@ -131,6 +131,21 @@ def _installDoH():
   pathlib.Path(doh_tgz).unlink()
   pathlib.Path(resolvconf_sh).unlink()
 
+def _configureSSHDConf(sshdconf_path):
+  with open(sshdconf_path, "r+") as f:
+    sshdconf = f.read()
+    sshdconf = re.sub('#PermitRootLogin prohibit-password', 'PermitRootLogin yes', sshdconf)
+    sshdconf = re.sub('#AllowAgentForwarding yes', 'AllowAgentForwarding yes', sshdconf)
+    sshdconf = re.sub('#AllowTcpForwarding yes', 'AllowTcpForwarding all', sshdconf)
+    sshdconf = re.sub('#Compression delayed', 'Compression no', sshdconf)
+    sshdconf = re.sub('#ClientAliveInterval 0', 'ClientAliveInterval 120', sshdconf)
+    f.write(sshdconf)
+    
+  with open(sshdconf_path, "a") as f:
+    f.write("\n# User configuration\n")
+    f.write("AllowStreamLocalForwarding all\n")
+    f.write("PermitOpen any\n")
+
 def _bashprofile(is_VNC):
   dotprofile_py = pathlib.Path("dotprofile.py")
   dotprofile_py.write_text("""\
@@ -198,9 +213,8 @@ def _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC):
                   ["ssh-keygen", "-A"],
                   check = True)
 
-  #Prevent ssh session disconnection.
-  with open("/etc/ssh/sshd_config", "a") as f:
-    f.write("\n\nClientAliveInterval 120\n")
+  #Configure sshd_config.
+  _configureSSHDConf("/etc/ssh/sshd_config")
 
   msg = ""
   msg += "ECDSA key fingerprint of host:\n"
