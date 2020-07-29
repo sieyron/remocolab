@@ -460,7 +460,8 @@ vnc_user_passwd.chmod(0o600)
 subprocess.run(
   ["/opt/TurboVNC/bin/vncserver",
   "-name", "Colab",
-  "-vgl"]
+  "-vgl"],
+  cwd = pathlib.Path.home()
 )
 
 #Disable screensaver because no one would want it.
