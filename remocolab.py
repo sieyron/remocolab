@@ -361,15 +361,16 @@ def _setup_nvidia_gl():
   subprocess.Popen(["Xorg", "-seat", "seat-1", "-allowMouseOpenFail", "-novtswitch", "-nolisten", "tcp"])
 
 def _setupVNC():
+  sf_dlMirror = "master"
   libjpeg_ver = "2.0.5"
   virtualGL_ver = "2.6.4"
   turboVNC_ver = "2.2.5"
 
-  libjpeg_url = "https://cfhcable.dl.sourceforge.net/project/libjpeg-turbo/{0}/libjpeg-turbo-official_{0}_amd64.deb".format(libjpeg_ver)
-  libjpeg32_url = "https://cfhcable.dl.sourceforge.net/project/libjpeg-turbo/{0}/libjpeg-turbo-official32_{0}_amd64.deb".format(libjpeg_ver)
-  virtualGL_url = "https://cfhcable.dl.sourceforge.net/project/virtualgl/{0}/virtualgl_{0}_amd64.deb".format(virtualGL_ver)
-  virtualGL32_url = "https://cfhcable.dl.sourceforge.net/project/virtualgl/{0}/virtualgl32_{0}_amd64.deb".format(virtualGL_ver)
-  turboVNC_url = "https://cfhcable.dl.sourceforge.net/project/turbovnc/{0}/turbovnc_{0}_amd64.deb".format(turboVNC_ver)
+  libjpeg_url = "https://{0}.dl.sourceforge.net/project/libjpeg-turbo/{1}/libjpeg-turbo-official_{1}_amd64.deb".format(sf_dlMirror, libjpeg_ver)
+  libjpeg32_url = "https://{0}.dl.sourceforge.net/project/libjpeg-turbo/{1}/libjpeg-turbo-official32_{1}_amd64.deb".format(sf_dlMirror, libjpeg_ver)
+  virtualGL_url = "https://{0}.dl.sourceforge.net/project/virtualgl/{1}/virtualgl_{1}_amd64.deb".format(sf_dlMirror, virtualGL_ver)
+  virtualGL32_url = "https://{0}.dl.sourceforge.net/project/virtualgl/{1}/virtualgl32_{1}_amd64.deb".format(sf_dlMirror, virtualGL_ver)
+  turboVNC_url = "https://{0}.dl.sourceforge.net/project/turbovnc/{1}/turbovnc_{1}_amd64.deb".format(sf_dlMirror, turboVNC_ver)
 
   _download(libjpeg_url, "libjpeg-turbo.deb")
   _download(libjpeg32_url, "libjpeg-turbo32.deb")
