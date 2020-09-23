@@ -132,7 +132,7 @@ def _installDoH():
   pathlib.Path(doh_tgz).unlink()
   pathlib.Path(resolvconf_sh).unlink()
 
-def _configureSSHDConf(sshdconf_path):
+def _configureSSHDConf(sshdconf_path, public_key):
   with open(sshdconf_path, "r") as f:
     sshdconf = f.read()
     sshdconf = re.sub('#PermitRootLogin prohibit-password', 'PermitRootLogin yes', sshdconf)
@@ -144,9 +144,11 @@ def _configureSSHDConf(sshdconf_path):
     f.write(sshdconf)
     
   with open(sshdconf_path, "a") as f:
-    f.write("\n# User configuration\n")
+    f.write("\n# Options added by remocolab\n")
     f.write("AllowStreamLocalForwarding all\n")
     f.write("PermitOpen any\n")
+    if public_key != None:
+      f.write("PasswordAuthentication no\n")
 
 def _bashprofile(is_VNC):
   dotprofile_py = pathlib.Path("dotprofile.py")
@@ -181,7 +183,19 @@ deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main
 """)
   google_chrome_repo.chmod(0o644)
 
-def _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC):
+def _set_public_key(user, public_key):
+  if public_key != None:
+    home_dir = pathlib.Path("/root" if user == "root" else "/home/" + user)
+    ssh_dir = home_dir / ".ssh"
+    ssh_dir.mkdir(mode = 0o700, exist_ok=True)
+    auth_keys_file = ssh_dir / "authorized_keys"
+    auth_keys_file.write_text(public_key)
+    auth_keys_file.chmod(0o600)
+    if user != "root":
+      shutil.chown(ssh_dir, user)
+      shutil.chown(auth_keys_file, user)
+
+def _setupSSHDImpl(public_key, ngrok_token, ngrok_region, is_VNC):
   #enable 32 bit architecture
   subprocess.run(["/usr/bin/dpkg", "--add-architecture", "i386"])
 
@@ -216,7 +230,7 @@ def _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC):
                   check = True)
 
   #Configure sshd_config.
-  _configureSSHDConf("/etc/ssh/sshd_config")
+  _configureSSHDConf("/etc/ssh/sshd_config", public_key)
 
   msg = ""
   msg += "ECDSA key fingerprint of host:\n"
@@ -245,6 +259,9 @@ def _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC):
   #Restart ssh service
   subprocess.run(["service", "ssh", "restart"])
 
+  #Set ssh public key
+  _set_public_key(user_name, public_key)
+
   pyngrok_config = pyngrok.conf.PyngrokConfig(auth_token = ngrok_token, region = ngrok_region)
   url = pyngrok.ngrok.connect(port = 22, proto = "tcp", pyngrok_config = pyngrok_config)
   m = re.match("tcp://(.+):(\d+)", url)
@@ -264,7 +281,7 @@ def _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC):
     msg += "✂️"*24 + "\n"
   return msg
 
-def _setupSSHDMain(ngrok_region, check_gpu_available, is_VNC):
+def _setupSSHDMain(public_key, ngrok_region, check_gpu_available, is_VNC):
   if check_gpu_available and not _check_gpu_available():
     return (False, "")
 
@@ -285,10 +302,10 @@ def _setupSSHDMain(ngrok_region, check_gpu_available, is_VNC):
     print("in - India (Mumbai)")
     ngrok_region = region = input()
 
-  return (True, _setupSSHDImpl(ngrok_token, ngrok_region, is_VNC))
+  return (True, _setupSSHDImpl(public_key, ngrok_token, ngrok_region, is_VNC))
 
-def setupSSHD(ngrok_region = None, check_gpu_available = False):
-  s, msg = _setupSSHDMain(ngrok_region, check_gpu_available, False)
+def setupSSHD(ngrok_region = None, check_gpu_available = False, public_key = None):
+  s, msg = _setupSSHDMain(public_key, ngrok_region, check_gpu_available, False)
   print(msg)
 
 def _setup_nvidia_gl():
@@ -464,8 +481,8 @@ subprocess.run(
                     universal_newlines = True)
   return r.stdout
 
-def setupVNC(ngrok_region = None, check_gpu_available = True):
-  stat, msg = _setupSSHDMain(ngrok_region, check_gpu_available, True)
+def setupVNC(ngrok_region = None, check_gpu_available = True, public_key = None):
+  stat, msg = _setupSSHDMain(public_key, ngrok_region, check_gpu_available, True)
   if stat:
     msg += _setupVNC()
 
