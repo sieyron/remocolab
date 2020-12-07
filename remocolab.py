@@ -195,7 +195,7 @@ def _set_public_key(user, public_key):
       shutil.chown(ssh_dir, user)
       shutil.chown(auth_keys_file, user)
 
-def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, is_VNC):
+def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_to, mount_gdrive_from, is_VNC):
   #enable 32 bit architecture
   subprocess.run(["/usr/bin/dpkg", "--add-architecture", "i386"])
 
@@ -219,6 +219,9 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, is_VNC):
   subprocess.run(["unminimize"], input = "y\n", check = True, universal_newlines = True)
 
   my_apt.installPkg("openssh-server")
+  if mount_gdrive_to:
+    my_apt.installPkg("bindfs")
+
   my_apt.commit()
   my_apt.close()
 
@@ -262,6 +265,13 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, is_VNC):
   #Set ssh public key
   _set_public_key(user_name, public_key)
 
+  if mount_gdrive_to:
+    user_gdrive_dir = pathlib.Path("/home") / user_name / mount_gdrive_to
+    pathlib.Path(user_gdrive_dir).mkdir(parents = True)
+    gdrive_root = pathlib.Path("/content/drive")
+    target_gdrive_dir = (gdrive_root / mount_gdrive_from) if mount_gdrive_from else gdrive_root
+    subprocess.run(["bindfs", "-u", user_name, "-g", user_name, target_gdrive_dir, user_gdrive_dir], check = True)
+
   ssh_common_options =  "-o UserKnownHostsFile=/dev/null -o VisualHostKey=yes"
 
   if tunnel == "ngrok":
@@ -302,7 +312,7 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, is_VNC):
     msg += "✂️"*24 + "\n"
   return msg
 
-def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, is_VNC):
+def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, is_VNC):
   if check_gpu_available and not _check_gpu_available():
     return (False, "")
 
@@ -310,6 +320,21 @@ def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, is_VNC
   avail_tunnels = {"ngrok", "argotunnel"}
   if tunnel not in avail_tunnels:
     raise RuntimeError("tunnel argument must be one of " + str(avail_tunnels))
+
+  if mount_gdrive_to:
+    if not pathlib.Path('/content/drive').exists():
+      print("Please click the folder icon on left side of Google Colab and Mount Drive.")
+      return (False, "")
+
+    if mount_gdrive_from:
+      try:
+        gdrive_root = pathlib.Path("/content/drive").joinpath(mount_gdrive_from).resolve(strict = True)
+        gdrive_root_parts = gdrive_root.parts
+        if len(gdrive_root_parts) < 2 or gdrive_root_parts[1] != "content":
+          raise FileNotFoundError
+      except FileNotFoundError:
+        print("Please specifiy the existing directory path in your Google drive like 'mount_gdrive_from = \"My Drive/somedir\"'")
+        return (False, "")
 
   ngrok_token = None
 
@@ -330,10 +355,10 @@ def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, is_VNC
       print("in - India (Mumbai)")
       ngrok_region = region = input()
 
-  return (True, _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, is_VNC))
+  return (True, _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_to, mount_gdrive_from, is_VNC))
 
-def setupSSHD(ngrok_region = None, check_gpu_available = False, tunnel = "ngrok", public_key = None):
-  s, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, False)
+def setupSSHD(ngrok_region = None, check_gpu_available = False, tunnel = "ngrok", mount_gdrive_to = None, mount_gdrive_from = None, public_key = None):
+  s, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, False)
   print(msg)
 
 def _setup_nvidia_gl():
@@ -509,8 +534,8 @@ subprocess.run(
                     universal_newlines = True)
   return r.stdout
 
-def setupVNC(ngrok_region = None, check_gpu_available = True, tunnel = "ngrok", public_key = None):
-  stat, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, True)
+def setupVNC(ngrok_region = None, check_gpu_available = True, tunnel = "ngrok", mount_gdrive_to = None, mount_gdrive_from = None, public_key = None):
+  stat, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, True)
   if stat:
     msg += _setupVNC()
 
