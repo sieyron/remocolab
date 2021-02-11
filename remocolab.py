@@ -158,6 +158,9 @@ import pathlib
 bash_profile = pathlib.Path.home().joinpath(".profile")
 rundotprofile_py = pathlib.Path.home().joinpath(".dotprofile_py_works")
 
+#Enable "$HOME/.local/bin" PATH in .profile
+pathlib.Path.home().joinpath(".local/bin").mkdir(exist_ok=True, parents=True)
+
 if not rundotprofile_py.exists():
 """)
 
