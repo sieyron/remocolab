@@ -435,8 +435,8 @@ def _setup_nvidia_gl():
 
 def _setupVNC():
   sf_dlMirror = "master"
-  libjpeg_ver = "2.0.5"
-  virtualGL_ver = "2.6.4"
+  libjpeg_ver = "2.0.6"
+  virtualGL_ver = "2.6.5"
   turboVNC_ver = "2.2.5"
 
   libjpeg_url = "https://{0}.dl.sourceforge.net/project/libjpeg-turbo/{1}/libjpeg-turbo-official_{1}_amd64.deb".format(sf_dlMirror, libjpeg_ver)
