@@ -151,7 +151,7 @@ def _configureSSHDConf(sshdconf_path, public_key):
       f.write("PasswordAuthentication no\n")
 
 def _bashprofile(is_VNC):
-  dotprofile_py = pathlib.Path("dotprofile.py")
+  dotprofile_py = tempfile.gettempdir() / pathlib.Path("dotprofile.py")
   dotprofile_py.write_text("""\
 import pathlib
 
