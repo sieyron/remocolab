@@ -162,6 +162,7 @@ rundotprofile_py = pathlib.Path.home().joinpath(".dotprofile_py_works")
 pathlib.Path.home().joinpath(".local/bin").mkdir(exist_ok=True, parents=True)
 
 if not rundotprofile_py.exists():
+  pass
 """)
 
   if is_VNC:
