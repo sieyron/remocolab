@@ -4,6 +4,8 @@ It also install [VirtualGL](https://www.virtualgl.org/) so that you can run Open
 It secures TurboVNC connection using SSH port forwarding.
 
 ## How to access SSH server running in colab?
+~~**ngrok currently doesn't work!**~~ ngrok works now
+
 You cannot directory login to the SSH server running on a colab instace.
 remocolab uses third party service to access it from your PC.
 You can choose [ngrok](https://ngrok.com/) or [Argo Tunnel](https://www.cloudflare.com/products/argo-tunnel/).
@@ -41,7 +43,7 @@ If you use Argo Tunnel:
 2. Create a new notebook on Google Colaboratory
 3. Add a code cell and copy & paste one of following codes to the cell
    - If you use public key authentication, specify content of your public key to `public_key` argument of `remocolab.setupSSHD()` or `remocolab.setupVNC()` like `remocolab.setupSSHD(public_key = "ecdsa-sha2-nistp521 AAA...")`
-   - add `tunnel = "argotunnel"` if you use Argo Tunnel.
+   - add `tunnel = "ngrok"` if you use ngrok.
 - SSH only:
 ```python3
 !pip3 install git+https://github.com/sieyron/remocolab.git
@@ -123,7 +125,7 @@ For example:
   When it is `True`, it checks whether GPU is available and show warning in case GPU is not available.
 - `tunnel`
   Specify which service you use to access ssh server on colab.
-  It must be "ngrok" or "argotunnel". default value is "ngrok".
+  It must be "ngrok" or "argotunnel". default value is "argotunnel".
 - `mount_gdrive_to`
   Specify a directory under colab user's home directory which is used to mount Google Drive.
   If it was not specified, Google Drive is not mount under colab user's home directory.
@@ -145,7 +147,9 @@ with open("/root/.ssh/authorized_keys", 'w') as f:
 And replace user name colab in ssh command to root.
 
 ## Experimental kaggle support
-remocolab in kaggle branch works on [Kaggle](https://www.kaggle.com/).
+- As Kaggle stops sesson right after running ssh server, kaggle is no longer supported.
+
+~~remocolab in kaggle branch works on [Kaggle](https://www.kaggle.com/).~~
 1. Create a new Notebook with Python language.
 2. Set settings to:
    - Internet on
