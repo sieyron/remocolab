@@ -289,7 +289,7 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_t
     _download("https://bin.equinox.io/c/VdrWdbjqyF/cloudflared-stable-linux-amd64.deb", "cloudflared-amd64.deb")
     _MyApt().installDebPackage("cloudflared-amd64.deb")
     cfd_proc = subprocess.Popen(
-        ["cloudflared", "tunnel", "--url", "ssh://localhost:22", "--logfile", "cloudflared.log", "--metrics", "localhost:49589"],
+        ["cloudflared", "tunnel", "--no-autoupdate", "--url", "ssh://localhost:22", "--logfile", "cloudflared.log", "--metrics", "localhost:49589"],
         stdout = subprocess.PIPE,
         universal_newlines = True
         )
