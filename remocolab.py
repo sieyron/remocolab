@@ -114,8 +114,9 @@ def _check_gpu_available():
 def _installDoH():
   resolvconf_sh = tempfile.gettempdir() + "/resolvconf.sh"
   doh_tgz = tempfile.gettempdir() + "/dns-over-https.tar.gz"
+  doh_ver = "2.2.5"
 
-  _download("https://github.com/sieyron/dns-over-https/releases/download/v2.2.1/dns-over-https_2.2.1_amd64.tar.gz", doh_tgz)
+  _download("https://github.com/sieyron/dns-over-https/releases/download/v{0}/dns-over-https_{0}_amd64.tar.gz".format(doh_ver), doh_tgz)
   shutil.unpack_archive(doh_tgz, "/opt/", "gztar")
 
   #Run doh-client in background
