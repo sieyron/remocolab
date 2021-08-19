@@ -240,9 +240,9 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_t
   _configureSSHDConf("/etc/ssh/sshd_config", public_key)
 
   msg = ""
-  msg += "ECDSA key fingerprint of host:\n"
+  msg += "ED25519 key fingerprint of host:\n"
   ret = subprocess.run(
-                ["ssh-keygen", "-lvf", "/etc/ssh/ssh_host_ecdsa_key.pub"],
+                ["ssh-keygen", "-lvf", "/etc/ssh/ssh_host_ed25519_key.pub"],
                 stdout = subprocess.PIPE,
                 check = True,
                 universal_newlines = True)
