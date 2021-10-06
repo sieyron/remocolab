@@ -200,7 +200,7 @@ def _set_public_key(user, public_key):
       shutil.chown(ssh_dir, user)
       shutil.chown(auth_keys_file, user)
 
-def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_to, mount_gdrive_from, is_VNC):
+def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_to, mount_gdrive_from, doh_client, is_VNC):
   #enable 32 bit architecture
   subprocess.run(["/usr/bin/dpkg", "--add-architecture", "i386"])
 
@@ -208,8 +208,10 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_t
   _GoogleLinuxRepo()
 
   #DNS over HTTPS
-  if not pathlib.Path('/opt/dns-over-https').exists():
-    _installDoH()
+  if doh_client != None and doh_client.lower() == "yes":
+    if not pathlib.Path('/opt/dns-over-https').exists():
+      _installDoH()
+    print("DNS over HTTPS enabled (Cloudflare DNS by default). Warning, sometimes causes fail to connect to the hosted runtime.")
 
   #apt-get update
   #apt-get upgrade
@@ -328,7 +330,7 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_t
     msg += "✂️"*24 + "\n"
   return msg
 
-def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, is_VNC):
+def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, doh_client, is_VNC):
   if check_gpu_available and not _check_gpu_available():
     return (False, "")
 
@@ -382,10 +384,10 @@ def _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_
       print("in - India (Mumbai)")
       ngrok_region = region = input()
 
-  return (True, _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_to, mount_gdrive_from, is_VNC))
+  return (True, _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_to, mount_gdrive_from, doh_client, is_VNC))
 
-def setupSSHD(ngrok_region = None, check_gpu_available = False, tunnel = None, mount_gdrive_to = None, mount_gdrive_from = None, public_key = None):
-  s, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, False)
+def setupSSHD(ngrok_region = None, check_gpu_available = False, tunnel = None, mount_gdrive_to = None, mount_gdrive_from = None, public_key = None, doh_client = None):
+  s, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, doh_client, False)
   print(msg)
 
 def _setup_nvidia_gl():
@@ -561,8 +563,8 @@ subprocess.run(
                     universal_newlines = True)
   return r.stdout
 
-def setupVNC(ngrok_region = None, check_gpu_available = True, tunnel = None, mount_gdrive_to = None, mount_gdrive_from = None, public_key = None):
-  stat, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, True)
+def setupVNC(ngrok_region = None, check_gpu_available = True, tunnel = None, mount_gdrive_to = None, mount_gdrive_from = None, public_key = None, doh_client = None):
+  stat, msg = _setupSSHDMain(public_key, tunnel, ngrok_region, check_gpu_available, mount_gdrive_to, mount_gdrive_from, doh_client, True)
   if stat:
     msg += _setupVNC()
 
