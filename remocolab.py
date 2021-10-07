@@ -170,7 +170,12 @@ if not rundotprofile_py.exists():
     with open(dotprofile_py, "a") as f:
       f.write("  # fix SDL2 Couldn't find matching GLX visual\n")
       f.write("  with open(bash_profile, \"a\") as f:\n")
-      f.write('    f.write(\"\\n# fix GLX Visuals\\nexport SDL_VIDEO_X11_VISUALID=`DISPLAY=\\":0.0\\" /opt/VirtualGL/bin/glxinfo | grep -A4 \\"GLX Visuals\\" | sed \'1,4d\' | cut -d \\" \\" -f 1`\\n\")\n')
+      f.write("""    f.write(\"\\n# fix GLX Visuals\\nexport SDL_VIDEO_X11_VISUALID=`DISPLAY=\\":0.0\\" /opt/VirtualGL/bin/glxinfo | grep -A4 \\"GLX Visuals\\" | sed \'1,4d\' | cut -d \\" \\" -f 1`\\n\")\n""")
+  else:
+    with open(dotprofile_py, "a") as f:
+      f.write("  # xdg-user-dirs\n")
+      f.write("  with open(bash_profile, \"a\") as f:\n")
+      f.write("""    f.write(\"\\n# Create some special folders in the home directory, such as \\"Desktop\\", \\"Documents\\", \\"Downloads\\", etc\\nxdg-user-dirs-update\\n\")\n""")
 
   with open(dotprofile_py, "a") as f:
     f.write("\nopen(rundotprofile_py, \"w\").close()\n")
@@ -225,7 +230,7 @@ def _setupSSHDImpl(public_key, tunnel, ngrok_token, ngrok_region, mount_gdrive_t
 
   subprocess.run(["unminimize"], input = "y\n", check = True, universal_newlines = True)
 
-  my_apt.installPkg("openssh-server")
+  my_apt.installPkg("openssh-server", "xdg-user-dirs")
   if mount_gdrive_to:
     my_apt.installPkg("bindfs")
 
