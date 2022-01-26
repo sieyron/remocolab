@@ -137,6 +137,7 @@ def _configureSSHDConf(sshdconf_path, public_key):
   with open(sshdconf_path, "r") as f:
     sshdconf = f.read()
     sshdconf = re.sub('#PermitRootLogin prohibit-password', 'PermitRootLogin yes', sshdconf)
+    sshdconf = re.sub('UsePAM yes', 'UsePAM no', sshdconf)
     sshdconf = re.sub('#AllowAgentForwarding yes', 'AllowAgentForwarding yes', sshdconf)
     sshdconf = re.sub('#AllowTcpForwarding yes', 'AllowTcpForwarding all', sshdconf)
     sshdconf = re.sub('#Compression delayed', 'Compression no', sshdconf)
